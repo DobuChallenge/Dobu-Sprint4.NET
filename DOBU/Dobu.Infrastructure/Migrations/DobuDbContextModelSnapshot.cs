@@ -347,6 +347,50 @@ namespace Dobu.Infrastructure.Migrations
                     b.ToTable("LOG_ERRO", (string)null);
                 });
 
+            modelBuilder.Entity("Dobu.Domain.Entities.MensagemAgendamento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("RAW(16)")
+                        .HasColumnName("ID_MENSAGEM_PK");
+
+                    b.Property<int>("Active")
+                        .HasColumnType("NUMBER(1)")
+                        .HasColumnName("ACTIVE");
+
+                    b.Property<Guid>("AgendamentoId")
+                        .HasColumnType("RAW(16)")
+                        .HasColumnName("ID_AGENDAMENTO_FK");
+
+                    b.Property<Guid>("AutorId")
+                        .HasColumnType("RAW(16)")
+                        .HasColumnName("ID_AUTOR_FK");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TIMESTAMP(7)")
+                        .HasColumnName("CREATED_AT");
+
+                    b.Property<string>("Texto")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("NVARCHAR2(500)")
+                        .HasColumnName("TEXTO_MENSAGEM");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("NVARCHAR2(20)")
+                        .HasColumnName("TIPO_MENSAGEM");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgendamentoId");
+
+                    b.HasIndex("AutorId");
+
+                    b.ToTable("MENSAGEM_AGENDAMENTO", (string)null);
+                });
+
             modelBuilder.Entity("Dobu.Domain.Entities.Pagamento", b =>
                 {
                     b.Property<Guid>("Id")
@@ -701,6 +745,25 @@ namespace Dobu.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("Dobu.Domain.Entities.MensagemAgendamento", b =>
+                {
+                    b.HasOne("Dobu.Domain.Entities.Agendamento", "Agendamento")
+                        .WithMany()
+                        .HasForeignKey("AgendamentoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Dobu.Domain.Entities.Usuario", "Autor")
+                        .WithMany()
+                        .HasForeignKey("AutorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Agendamento");
+
+                    b.Navigation("Autor");
                 });
 
             modelBuilder.Entity("Dobu.Domain.Entities.Pagamento", b =>

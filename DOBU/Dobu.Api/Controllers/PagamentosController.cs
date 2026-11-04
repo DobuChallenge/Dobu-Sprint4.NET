@@ -1,20 +1,20 @@
 using Dobu.Domain.Entities;
-using Dobu.Infrastructure.Persistence;
+using Dobu.Application.Interfaces.Repositories;
+using Dobu.Application.Queries;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Dobu.Api.Controllers;
 
 [Produces("application/json")]
 [ApiController]
 [Route("api/pagamentos")]
-public class PagamentosController(DobuDbContext context) : ControllerBase
+public class PagamentosController(IDobuUnitOfWork context) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<Pagamento>>> GetAll()
+    public async Task<ActionResult<IEnumerable<Pagamento>>> GetAll([FromQuery] QueryParameters query)
     {
-        return Ok(await context.Pagamentos.AsNoTracking().Include(x => x.Consulta).ToListAsync());
+        return Ok(await context.Pagamentos.ListAsync(query, includes: [x => x.Consulta]));
     }
 
     [HttpGet("{id:guid}")]
@@ -22,7 +22,7 @@ public class PagamentosController(DobuDbContext context) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Pagamento>> GetById(Guid id)
     {
-        var pagamento = await context.Pagamentos.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        var pagamento = await context.Pagamentos.FirstOrDefaultAsync(x => x.Id == id, tracking: false);
         return pagamento is null ? NotFound() : Ok(pagamento);
     }
 
@@ -30,15 +30,15 @@ public class PagamentosController(DobuDbContext context) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<Pagamento>> GetByConsulta(Guid consultaId)
     {
-        var pagamento = await context.Pagamentos.AsNoTracking().FirstOrDefaultAsync(x => x.ConsultaId == consultaId);
+        var pagamento = await context.Pagamentos.FirstOrDefaultAsync(x => x.ConsultaId == consultaId, tracking: false);
         return pagamento is null ? NotFound() : Ok(pagamento);
     }
 
     [HttpGet("forma/{formaPagamento}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<Pagamento>>> GetByForma(string formaPagamento)
+    public async Task<ActionResult<IEnumerable<Pagamento>>> GetByForma(string formaPagamento, [FromQuery] QueryParameters query)
     {
-        return Ok(await context.Pagamentos.AsNoTracking().Where(x => x.FormaPagamento == formaPagamento).ToListAsync());
+        return Ok(await context.Pagamentos.ListAsync(query, predicate: x => x.FormaPagamento == formaPagamento));
     }
 
     [HttpPost]

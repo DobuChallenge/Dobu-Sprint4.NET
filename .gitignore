@@ -1,4 +1,10 @@
 .env
+.env.*
+!.env.example
+**/*.db-shm
+**/*.db-wal
+**/*.log
+*.user
 
 # Build output
 **/bin/

@@ -1,24 +1,24 @@
 using Dobu.Domain.Entities;
-using Dobu.Infrastructure.Persistence;
+using Dobu.Application.Interfaces.Repositories;
+using Dobu.Application.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace Dobu.Api.Controllers;
 
 [ApiController]
 [Route("api/usuarios")]
-public class UsuariosController(DobuDbContext context) : ControllerBase
+public class UsuariosController(IDobuUnitOfWork context) : ControllerBase
 {
     private readonly PasswordHasher<Usuario> _hasher = new();
 
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<Usuario>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<Usuario>>> GetAll()
+    public async Task<ActionResult<IEnumerable<Usuario>>> GetAll([FromQuery] QueryParameters query)
     {
-        return Ok(await context.Usuarios.AsNoTracking().ToListAsync());
+        return Ok(await context.Usuarios.ListAsync(query));
     }
 
     [HttpGet("{id:guid}")]
@@ -26,17 +26,15 @@ public class UsuariosController(DobuDbContext context) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Usuario>> GetById(Guid id)
     {
-        var usuario = await context.Usuarios.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        var usuario = await context.Usuarios.FirstOrDefaultAsync(x => x.Id == id, tracking: false);
         return usuario is null ? NotFound() : Ok(usuario);
     }
 
     [HttpGet("tipo/{tipoUsuario}")]
     [ProducesResponseType(typeof(IEnumerable<Usuario>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<Usuario>>> GetByTipo(string tipoUsuario)
+    public async Task<ActionResult<IEnumerable<Usuario>>> GetByTipo(string tipoUsuario, [FromQuery] QueryParameters query)
     {
-        return Ok(await context.Usuarios.AsNoTracking()
-            .Where(x => x.TipoUsuario == tipoUsuario.ToUpper())
-            .ToListAsync());
+        return Ok(await context.Usuarios.ListAsync(query, predicate: x => x.TipoUsuario == tipoUsuario.ToUpper()));
     }
 
     [HttpGet("email/{email}")]
@@ -44,11 +42,12 @@ public class UsuariosController(DobuDbContext context) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Usuario>> GetByEmail(string email)
     {
-        var usuario = await context.Usuarios.AsNoTracking().FirstOrDefaultAsync(x => x.Email == email);
+        var usuario = await context.Usuarios.FirstOrDefaultAsync(x => x.Email == email, tracking: false);
         return usuario is null ? NotFound() : Ok(usuario);
     }
 
     [HttpPost]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(Usuario), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Usuario>> Create(UsuarioRequest request)

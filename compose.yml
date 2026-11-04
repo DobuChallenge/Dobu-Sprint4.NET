@@ -1,0 +1,30 @@
+services:
+  oracle:
+    image: gvenzl/oracle-free:23-slim-faststart
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_ADMIN_PASSWORD:?Defina ORACLE_ADMIN_PASSWORD no ambiente}
+      APP_USER: dobu
+      APP_USER_PASSWORD: ${DOBU_ORACLE_PASSWORD:?Defina DOBU_ORACLE_PASSWORD no ambiente}
+    ports:
+      - "127.0.0.1:1521:1521"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    healthcheck:
+      test: [CMD, healthcheck.sh]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+  mongodb:
+    image: mongo:8.0.34
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: [CMD, mongosh, --quiet, --eval, "db.adminCommand({ping:1}).ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+volumes:
+  oracle-data:
+  mongo-data:

@@ -8,6 +8,9 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Dobu.Api/Dobu.Api.csproj", "Dobu.Api/"]
+COPY ["Dobu.Infrastructure/Dobu.Infrastructure.csproj", "Dobu.Infrastructure/"]
+COPY ["Dobu.Application/Dobu.Application.csproj", "Dobu.Application/"]
+COPY ["Dobu.Domain/Dobu.Domain.csproj", "Dobu.Domain/"]
 RUN dotnet restore "Dobu.Api/Dobu.Api.csproj"
 COPY . .
 WORKDIR "/src/Dobu.Api"

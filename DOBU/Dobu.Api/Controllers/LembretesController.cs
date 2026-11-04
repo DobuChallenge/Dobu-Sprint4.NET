@@ -1,20 +1,20 @@
 using Dobu.Domain.Entities;
-using Dobu.Infrastructure.Persistence;
+using Dobu.Application.Interfaces.Repositories;
+using Dobu.Application.Queries;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Dobu.Api.Controllers;
 
 [Produces("application/json")]
 [ApiController]
 [Route("api/lembretes")]
-public class LembretesController(DobuDbContext context) : ControllerBase
+public class LembretesController(IDobuUnitOfWork context) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<Lembrete>>> GetAll()
+    public async Task<ActionResult<IEnumerable<Lembrete>>> GetAll([FromQuery] QueryParameters query)
     {
-        return Ok(await context.Lembretes.AsNoTracking().Include(x => x.Pet).ToListAsync());
+        return Ok(await context.Lembretes.ListAsync(query, includes: [x => x.Pet]));
     }
 
     [HttpGet("{id:guid}")]
@@ -22,22 +22,22 @@ public class LembretesController(DobuDbContext context) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Lembrete>> GetById(Guid id)
     {
-        var lembrete = await context.Lembretes.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        var lembrete = await context.Lembretes.FirstOrDefaultAsync(x => x.Id == id, tracking: false);
         return lembrete is null ? NotFound() : Ok(lembrete);
     }
 
     [HttpGet("pet/{petId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<Lembrete>>> GetByPet(Guid petId)
+    public async Task<ActionResult<IEnumerable<Lembrete>>> GetByPet(Guid petId, [FromQuery] QueryParameters query)
     {
-        return Ok(await context.Lembretes.AsNoTracking().Where(x => x.PetId == petId).ToListAsync());
+        return Ok(await context.Lembretes.ListAsync(query, predicate: x => x.PetId == petId));
     }
 
     [HttpGet("status/{status}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<Lembrete>>> GetByStatus(string status)
+    public async Task<ActionResult<IEnumerable<Lembrete>>> GetByStatus(string status, [FromQuery] QueryParameters query)
     {
-        return Ok(await context.Lembretes.AsNoTracking().Where(x => x.Status == status).ToListAsync());
+        return Ok(await context.Lembretes.ListAsync(query, predicate: x => x.Status == status));
     }
 
     [HttpPost]

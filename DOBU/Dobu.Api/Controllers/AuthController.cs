@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Dobu.Api.Controllers;
 
 [ApiController]
+[Microsoft.AspNetCore.Authorization.AllowAnonymous]
 [Route("api/auth")]
 public class AuthController(IAuthService authService) : ControllerBase
 {

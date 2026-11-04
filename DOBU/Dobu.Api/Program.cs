@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 var jwtSigningKey = builder.Configuration["Jwt:Key"];
@@ -24,7 +25,10 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Host.UseSerilog();
 
-builder.Services.AddControllers().AddJsonOptions(options =>
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+builder.Services.AddProblemDetails();
+builder.Services.AddCors(options => options.AddPolicy("Mobile", policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().WithExposedHeaders("Link", "X-Total-Count")));
+builder.Services.AddControllers(options => options.Filters.Add<Dobu.Api.Filters.HypermediaFilter>()).AddJsonOptions(options =>
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerDocumentation();
@@ -39,7 +43,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         ValidateIssuerSigningKey = true, IssuerSigningKey = new SymmetricSecurityKey(jwtKey),
         ValidateIssuer = false, ValidateAudience = false, ValidateLifetime = true
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options => options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 builder.Services.AddHttpClient();
 builder.Services.AddHttpClient("ExternalServiceHealthCheck", client =>
 {
@@ -48,6 +52,7 @@ builder.Services.AddHttpClient("ExternalServiceHealthCheck", client =>
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<DobuDbContext>("database", tags: ["ready"])
     .AddCheck<ExternalServiceHealthCheck>("external-service", tags: ["ready"]);
+if (builder.Configuration.GetValue<bool>("Mongo:Enabled")) builder.Services.AddHealthChecks().AddCheck<MongoHealthCheck>("mongodb", tags: ["ready"]);
 builder.Services.AddDobuObservability();
 
 var app = builder.Build();
@@ -56,6 +61,11 @@ if ((builder.Configuration["Database:Provider"] ?? "Sqlite").Equals("Sqlite", St
     using var scope = app.Services.CreateScope();
     scope.ServiceProvider.GetRequiredService<DobuDbContext>().Database.EnsureCreated();
 }
+if (builder.Configuration.GetValue<bool>("Database:ApplyMigrations"))
+{
+    using var migrationScope = app.Services.CreateScope();
+    await migrationScope.ServiceProvider.GetRequiredService<DobuDbContext>().Database.MigrateAsync();
+}
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseSerilogRequestLogging(options =>
 {
@@ -63,28 +73,14 @@ app.UseSerilogRequestLogging(options =>
         diagnosticContext.Set("CorrelationId", httpContext.TraceIdentifier);
 });
 app.UseMiddleware<RequestMetricsMiddleware>();
-app.UseExceptionHandler(errorApp =>
-{
-    errorApp.Run(async context =>
-    {
-        var error = context.Features.Get<IExceptionHandlerFeature>()?.Error;
-        Log.Error(error, "Erro nao tratado na requisicao {CorrelationId}", context.TraceIdentifier);
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        context.Response.ContentType = "application/json";
-        await context.Response.WriteAsJsonAsync(new
-        {
-            title = "Erro interno",
-            status = StatusCodes.Status500InternalServerError,
-            correlationId = context.TraceIdentifier
-        });
-    });
-});
+app.UseExceptionHandler();
 app.UseSwagger();
 app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v1/swagger.json", "Dobu API v1"); options.RoutePrefix = "swagger"; });
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment()) app.UseHttpsRedirection();
+app.UseCors("Mobile");
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
 app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
     Predicate = check => check.Tags.Contains("ready"),
@@ -98,8 +94,8 @@ app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.Health
         };
         await context.Response.WriteAsJsonAsync(payload);
     }
-});
-app.MapPrometheusScrapingEndpoint("/metrics");
+}).AllowAnonymous();
+app.MapPrometheusScrapingEndpoint("/metrics").AllowAnonymous();
 app.MapControllers();
 app.Run();
 

@@ -20,6 +20,8 @@ public class DobuDbContext(DbContextOptions<DobuDbContext> options) : DbContext(
     public DbSet<LogErro> LogsErro { get; set; }
     public DbSet<InformacaoCuidado> InformacoesCuidado { get; set; }
 
+    public DbSet<MensagemAgendamento> MensagensAgendamento { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(DobuDbContext).Assembly);

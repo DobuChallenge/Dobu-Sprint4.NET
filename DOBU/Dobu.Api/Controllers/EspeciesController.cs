@@ -1,31 +1,31 @@
 using Dobu.Domain.Entities;
-using Dobu.Infrastructure.Persistence;
+using Dobu.Application.Interfaces.Repositories;
+using Dobu.Application.Queries;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Dobu.Api.Controllers;
 
 [ApiController]
 [Route("api/especies")]
-public class EspeciesController(DobuDbContext context) : ControllerBase
+public class EspeciesController(IDobuUnitOfWork context) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Especie>>> GetAll()
+    public async Task<ActionResult<IEnumerable<Especie>>> GetAll([FromQuery] QueryParameters query)
     {
-        return Ok(await context.Especies.AsNoTracking().Include(x => x.Racas).ToListAsync());
+        return Ok(await context.Especies.ListAsync(query, includes: [x => x.Racas]));
     }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<Especie>> GetById(Guid id)
     {
-        var especie = await context.Especies.AsNoTracking().Include(x => x.Racas).FirstOrDefaultAsync(x => x.Id == id);
+        var especie = await context.Especies.FirstOrDefaultAsync(x => x.Id == id, tracking: false, includes: [x => x.Racas]);
         return especie is null ? NotFound() : Ok(especie);
     }
 
     [HttpGet("nome/{nome}")]
-    public async Task<ActionResult<IEnumerable<Especie>>> GetByNome(string nome)
+    public async Task<ActionResult<IEnumerable<Especie>>> GetByNome(string nome, [FromQuery] QueryParameters query)
     {
-        return Ok(await context.Especies.AsNoTracking().Where(x => x.Nome.Contains(nome)).ToListAsync());
+        return Ok(await context.Especies.ListAsync(query, predicate: x => x.Nome.Contains(nome)));
     }
 
     [HttpPost]

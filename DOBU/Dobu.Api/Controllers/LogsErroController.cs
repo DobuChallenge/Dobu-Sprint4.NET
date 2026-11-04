@@ -1,20 +1,20 @@
 using Dobu.Domain.Entities;
-using Dobu.Infrastructure.Persistence;
+using Dobu.Application.Interfaces.Repositories;
+using Dobu.Application.Queries;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Dobu.Api.Controllers;
 
 [Produces("application/json")]
 [ApiController]
 [Route("api/logs-erro")]
-public class LogsErroController(DobuDbContext context) : ControllerBase
+public class LogsErroController(IDobuUnitOfWork context) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<LogErro>>> GetAll()
+    public async Task<ActionResult<IEnumerable<LogErro>>> GetAll([FromQuery] QueryParameters query)
     {
-        return Ok(await context.LogsErro.AsNoTracking().Include(x => x.Usuario).ToListAsync());
+        return Ok(await context.LogsErro.ListAsync(query, includes: [x => x.Usuario]));
     }
 
     [HttpGet("{id:guid}")]
@@ -22,22 +22,22 @@ public class LogsErroController(DobuDbContext context) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<LogErro>> GetById(Guid id)
     {
-        var log = await context.LogsErro.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        var log = await context.LogsErro.FirstOrDefaultAsync(x => x.Id == id, tracking: false);
         return log is null ? NotFound() : Ok(log);
     }
 
     [HttpGet("usuario/{usuarioId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<LogErro>>> GetByUsuario(Guid usuarioId)
+    public async Task<ActionResult<IEnumerable<LogErro>>> GetByUsuario(Guid usuarioId, [FromQuery] QueryParameters query)
     {
-        return Ok(await context.LogsErro.AsNoTracking().Where(x => x.UsuarioId == usuarioId).ToListAsync());
+        return Ok(await context.LogsErro.ListAsync(query, predicate: x => x.UsuarioId == usuarioId));
     }
 
     [HttpGet("procedure/{nomeProcedure}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<LogErro>>> GetByProcedure(string nomeProcedure)
+    public async Task<ActionResult<IEnumerable<LogErro>>> GetByProcedure(string nomeProcedure, [FromQuery] QueryParameters query)
     {
-        return Ok(await context.LogsErro.AsNoTracking().Where(x => x.NomeProcedure == nomeProcedure).ToListAsync());
+        return Ok(await context.LogsErro.ListAsync(query, predicate: x => x.NomeProcedure == nomeProcedure));
     }
 
     [HttpPost]

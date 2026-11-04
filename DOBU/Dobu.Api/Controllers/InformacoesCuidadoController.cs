@@ -1,19 +1,19 @@
 using Dobu.Domain.Entities;
-using Dobu.Infrastructure.Persistence;
+using Dobu.Application.Interfaces.Repositories;
+using Dobu.Application.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Dobu.Api.Controllers;
 
 [ApiController]
 [Authorize]
 [Route("api/informacoes-cuidado")]
-public class InformacoesCuidadoController(DobuDbContext context) : ControllerBase
+public class InformacoesCuidadoController(IDobuUnitOfWork context) : ControllerBase
 {
     [HttpGet("pet/{petId:guid}")]
-    public async Task<ActionResult<IEnumerable<InformacaoCuidado>>> GetByPet(Guid petId, CancellationToken cancellationToken) =>
-        Ok(await context.InformacoesCuidado.AsNoTracking().Where(x => x.PetId == petId).ToListAsync(cancellationToken));
+    public async Task<ActionResult<IEnumerable<InformacaoCuidado>>> GetByPet(Guid petId, CancellationToken cancellationToken, [FromQuery] QueryParameters query) =>
+        Ok(await context.InformacoesCuidado.ListAsync(query, predicate: x => x.PetId == petId, cancellationToken: cancellationToken));
 
     [HttpPost]
     public async Task<ActionResult<InformacaoCuidado>> Create(InformacaoCuidadoRequest request, CancellationToken cancellationToken)
@@ -32,7 +32,7 @@ public class InformacoesCuidadoController(DobuDbContext context) : ControllerBas
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var information = await context.InformacoesCuidado.FindAsync([id], cancellationToken);
+        var information = await context.InformacoesCuidado.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (information is null) return NotFound();
         context.InformacoesCuidado.Remove(information);
         await context.SaveChangesAsync(cancellationToken);

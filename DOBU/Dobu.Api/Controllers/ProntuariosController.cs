@@ -1,20 +1,20 @@
 using Dobu.Domain.Entities;
-using Dobu.Infrastructure.Persistence;
+using Dobu.Application.Interfaces.Repositories;
+using Dobu.Application.Queries;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Dobu.Api.Controllers;
 
 [Produces("application/json")]
 [ApiController]
 [Route("api/prontuarios")]
-public class ProntuariosController(DobuDbContext context) : ControllerBase
+public class ProntuariosController(IDobuUnitOfWork context) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<Prontuario>>> GetAll()
+    public async Task<ActionResult<IEnumerable<Prontuario>>> GetAll([FromQuery] QueryParameters query)
     {
-        return Ok(await context.Prontuarios.AsNoTracking().Include(x => x.Consulta).ToListAsync());
+        return Ok(await context.Prontuarios.ListAsync(query, includes: [x => x.Consulta]));
     }
 
     [HttpGet("{id:guid}")]
@@ -22,7 +22,7 @@ public class ProntuariosController(DobuDbContext context) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Prontuario>> GetById(Guid id)
     {
-        var prontuario = await context.Prontuarios.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        var prontuario = await context.Prontuarios.FirstOrDefaultAsync(x => x.Id == id, tracking: false);
         return prontuario is null ? NotFound() : Ok(prontuario);
     }
 
@@ -30,7 +30,7 @@ public class ProntuariosController(DobuDbContext context) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<Prontuario>> GetByConsulta(Guid consultaId)
     {
-        var prontuario = await context.Prontuarios.AsNoTracking().FirstOrDefaultAsync(x => x.ConsultaId == consultaId);
+        var prontuario = await context.Prontuarios.FirstOrDefaultAsync(x => x.ConsultaId == consultaId, tracking: false);
         return prontuario is null ? NotFound() : Ok(prontuario);
     }
 

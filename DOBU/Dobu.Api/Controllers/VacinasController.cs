@@ -1,20 +1,20 @@
 using Dobu.Domain.Entities;
-using Dobu.Infrastructure.Persistence;
+using Dobu.Application.Interfaces.Repositories;
+using Dobu.Application.Queries;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Dobu.Api.Controllers;
 
 [Produces("application/json")]
 [ApiController]
 [Route("api/vacinas")]
-public class VacinasController(DobuDbContext context) : ControllerBase
+public class VacinasController(IDobuUnitOfWork context) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<Vacina>>> GetAll()
+    public async Task<ActionResult<IEnumerable<Vacina>>> GetAll([FromQuery] QueryParameters query)
     {
-        return Ok(await context.Vacinas.AsNoTracking().Include(x => x.Pet).ToListAsync());
+        return Ok(await context.Vacinas.ListAsync(query, includes: [x => x.Pet]));
     }
 
     [HttpGet("{id:guid}")]
@@ -22,22 +22,22 @@ public class VacinasController(DobuDbContext context) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Vacina>> GetById(Guid id)
     {
-        var vacina = await context.Vacinas.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        var vacina = await context.Vacinas.FirstOrDefaultAsync(x => x.Id == id, tracking: false);
         return vacina is null ? NotFound() : Ok(vacina);
     }
 
     [HttpGet("pet/{petId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<Vacina>>> GetByPet(Guid petId)
+    public async Task<ActionResult<IEnumerable<Vacina>>> GetByPet(Guid petId, [FromQuery] QueryParameters query)
     {
-        return Ok(await context.Vacinas.AsNoTracking().Where(x => x.PetId == petId).ToListAsync());
+        return Ok(await context.Vacinas.ListAsync(query, predicate: x => x.PetId == petId));
     }
 
     [HttpGet("proxima-dose")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<Vacina>>> GetByProximaDose([FromQuery] DateTime ate)
+    public async Task<ActionResult<IEnumerable<Vacina>>> GetByProximaDose([FromQuery] DateTime ate, [FromQuery] QueryParameters query)
     {
-        return Ok(await context.Vacinas.AsNoTracking().Where(x => x.DataProximaDose <= ate).ToListAsync());
+        return Ok(await context.Vacinas.ListAsync(query, predicate: x => x.DataProximaDose <= ate));
     }
 
     [HttpPost]

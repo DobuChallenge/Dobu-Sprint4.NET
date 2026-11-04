@@ -1,20 +1,20 @@
 using Dobu.Domain.Entities;
-using Dobu.Infrastructure.Persistence;
+using Dobu.Application.Interfaces.Repositories;
+using Dobu.Application.Queries;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Dobu.Api.Controllers;
 
 [Produces("application/json")]
 [ApiController]
 [Route("api/analises-ia")]
-public class AnalisesIaController(DobuDbContext context) : ControllerBase
+public class AnalisesIaController(IDobuUnitOfWork context) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<AnaliseIa>>> GetAll()
+    public async Task<ActionResult<IEnumerable<AnaliseIa>>> GetAll([FromQuery] QueryParameters query)
     {
-        return Ok(await context.AnalisesIa.AsNoTracking().Include(x => x.Prontuario).ToListAsync());
+        return Ok(await context.AnalisesIa.ListAsync(query, includes: [x => x.Prontuario]));
     }
 
     [HttpGet("{id:guid}")]
@@ -22,7 +22,7 @@ public class AnalisesIaController(DobuDbContext context) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AnaliseIa>> GetById(Guid id)
     {
-        var analise = await context.AnalisesIa.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        var analise = await context.AnalisesIa.FirstOrDefaultAsync(x => x.Id == id, tracking: false);
         return analise is null ? NotFound() : Ok(analise);
     }
 
@@ -30,15 +30,15 @@ public class AnalisesIaController(DobuDbContext context) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<AnaliseIa>> GetByProntuario(Guid prontuarioId)
     {
-        var analise = await context.AnalisesIa.AsNoTracking().FirstOrDefaultAsync(x => x.ProntuarioId == prontuarioId);
+        var analise = await context.AnalisesIa.FirstOrDefaultAsync(x => x.ProntuarioId == prontuarioId, tracking: false);
         return analise is null ? NotFound() : Ok(analise);
     }
 
     [HttpGet("risco/{risco:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<AnaliseIa>>> GetByRisco(int risco)
+    public async Task<ActionResult<IEnumerable<AnaliseIa>>> GetByRisco(int risco, [FromQuery] QueryParameters query)
     {
-        return Ok(await context.AnalisesIa.AsNoTracking().Where(x => x.Risco >= risco).ToListAsync());
+        return Ok(await context.AnalisesIa.ListAsync(query, predicate: x => x.Risco >= risco));
     }
 
     [HttpPost]

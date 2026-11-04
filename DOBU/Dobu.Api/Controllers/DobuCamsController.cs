@@ -1,20 +1,20 @@
 using Dobu.Domain.Entities;
-using Dobu.Infrastructure.Persistence;
+using Dobu.Application.Interfaces.Repositories;
+using Dobu.Application.Queries;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Dobu.Api.Controllers;
 
 [Produces("application/json")]
 [ApiController]
 [Route("api/dobucams")]
-public class DobuCamsController(DobuDbContext context) : ControllerBase
+public class DobuCamsController(IDobuUnitOfWork context) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<DobuCam>>> GetAll()
+    public async Task<ActionResult<IEnumerable<DobuCam>>> GetAll([FromQuery] QueryParameters query)
     {
-        return Ok(await context.DobuCams.AsNoTracking().Include(x => x.Pet).ToListAsync());
+        return Ok(await context.DobuCams.ListAsync(query, includes: [x => x.Pet]));
     }
 
     [HttpGet("{id:guid}")]
@@ -22,22 +22,22 @@ public class DobuCamsController(DobuDbContext context) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DobuCam>> GetById(Guid id)
     {
-        var camera = await context.DobuCams.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        var camera = await context.DobuCams.FirstOrDefaultAsync(x => x.Id == id, tracking: false);
         return camera is null ? NotFound() : Ok(camera);
     }
 
     [HttpGet("pet/{petId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<DobuCam>>> GetByPet(Guid petId)
+    public async Task<ActionResult<IEnumerable<DobuCam>>> GetByPet(Guid petId, [FromQuery] QueryParameters query)
     {
-        return Ok(await context.DobuCams.AsNoTracking().Where(x => x.PetId == petId).ToListAsync());
+        return Ok(await context.DobuCams.ListAsync(query, predicate: x => x.PetId == petId));
     }
 
     [HttpGet("status/{statusCamera}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<DobuCam>>> GetByStatus(string statusCamera)
+    public async Task<ActionResult<IEnumerable<DobuCam>>> GetByStatus(string statusCamera, [FromQuery] QueryParameters query)
     {
-        return Ok(await context.DobuCams.AsNoTracking().Where(x => x.StatusCamera == statusCamera).ToListAsync());
+        return Ok(await context.DobuCams.ListAsync(query, predicate: x => x.StatusCamera == statusCamera));
     }
 
     [HttpPost]

@@ -1,0 +1,52 @@
+name: Testes .NET
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dotnet-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mongodb:
+        image: mongo:8.0.34
+        ports: ["27017:27017"]
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1}).ok'"
+          --health-interval 10s --health-timeout 5s --health-retries 15
+      oracle:
+        image: gvenzl/oracle-free:23-slim-faststart
+        env:
+          ORACLE_PASSWORD: OracleTest_2026
+          APP_USER: dobu_test
+          APP_USER_PASSWORD: DobuTest_2026
+        ports: ["1521:1521"]
+        options: >-
+          --health-cmd healthcheck.sh --health-interval 10s --health-timeout 5s --health-retries 30
+    env:
+      DOBU_TEST_MONGO_URL: mongodb://localhost:27017
+      DOBU_TEST_ORACLE: User Id=dobu_test;Password=DobuTest_2026;Data Source=localhost:1521/FREEPDB1
+      DOBU_TEST_ORACLE_ISOLATED: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - run: dotnet restore DOBU/Dobu.sln
+      - run: dotnet test DOBU/Dobu.sln --no-restore --collect:"XPlat Code Coverage" --results-directory TestResults
+      - run: python3 scripts/coverage.py TestResults --minimum 80
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cobertura
+          path: TestResults/**/coverage.cobertura.xml

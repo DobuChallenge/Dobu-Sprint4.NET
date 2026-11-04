@@ -1,55 +1,47 @@
 using Dobu.Domain.Entities;
-using Dobu.Infrastructure.Persistence;
+using Dobu.Application.Interfaces.Repositories;
+using Dobu.Application.Queries;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Dobu.Api.Controllers;
 
 [ApiController]
 [Route("api/consultas")]
-public class ConsultasController(DobuDbContext context) : ControllerBase
+public class ConsultasController(IDobuUnitOfWork context) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Consulta>>> GetAll()
+    public async Task<ActionResult<IEnumerable<Consulta>>> GetAll([FromQuery] QueryParameters query)
     {
-        return Ok(await context.Consultas.AsNoTracking()
-            .Include(x => x.Pet)
-            .Include(x => x.Veterinario)
-            .ToListAsync());
+        return Ok(await context.Consultas.ListAsync(query, includes: [x => x.Pet, x => x.Veterinario]));
     }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<Consulta>> GetById(Guid id)
     {
-        var consulta = await context.Consultas.AsNoTracking()
-            .Include(x => x.Pet)
-            .Include(x => x.Veterinario)
-            .FirstOrDefaultAsync(x => x.Id == id);
+        var consulta = await context.Consultas.FirstOrDefaultAsync(x => x.Id == id, tracking: false, includes: [x => x.Pet, x => x.Veterinario]);
 
         return consulta is null ? NotFound() : Ok(consulta);
     }
 
     [HttpGet("pet/{petId:guid}")]
-    public async Task<ActionResult<IEnumerable<Consulta>>> GetByPet(Guid petId)
+    public async Task<ActionResult<IEnumerable<Consulta>>> GetByPet(Guid petId, [FromQuery] QueryParameters query)
     {
-        return Ok(await context.Consultas.AsNoTracking().Where(x => x.PetId == petId).ToListAsync());
+        return Ok(await context.Consultas.ListAsync(query, predicate: x => x.PetId == petId));
     }
 
     [HttpGet("veterinario/{veterinarioId:guid}")]
-    public async Task<ActionResult<IEnumerable<Consulta>>> GetByVeterinario(Guid veterinarioId)
+    public async Task<ActionResult<IEnumerable<Consulta>>> GetByVeterinario(Guid veterinarioId, [FromQuery] QueryParameters query)
     {
-        return Ok(await context.Consultas.AsNoTracking().Where(x => x.VeterinarioId == veterinarioId).ToListAsync());
+        return Ok(await context.Consultas.ListAsync(query, predicate: x => x.VeterinarioId == veterinarioId));
     }
 
     [HttpGet("periodo")]
-    public async Task<ActionResult<IEnumerable<Consulta>>> GetByPeriodo([FromQuery] DateTime inicio, [FromQuery] DateTime fim)
+    public async Task<ActionResult<IEnumerable<Consulta>>> GetByPeriodo([FromQuery] DateTime inicio, [FromQuery] DateTime fim, [FromQuery] QueryParameters query)
     {
         if (inicio > fim)
             return BadRequest("A data inicial deve ser menor ou igual a data final.");
 
-        return Ok(await context.Consultas.AsNoTracking()
-            .Where(x => x.DataConsulta >= inicio && x.DataConsulta <= fim)
-            .ToListAsync());
+        return Ok(await context.Consultas.ListAsync(query, predicate: x => x.DataConsulta >= inicio && x.DataConsulta <= fim));
     }
 
     [HttpPost]

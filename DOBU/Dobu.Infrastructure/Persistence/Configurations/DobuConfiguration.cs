@@ -230,6 +230,23 @@ public class InformacaoCuidadoConfiguration : IEntityTypeConfiguration<Informaca
     }
 }
 
+public class MensagemAgendamentoConfiguration : IEntityTypeConfiguration<MensagemAgendamento>
+{
+    public void Configure(EntityTypeBuilder<MensagemAgendamento> builder)
+    {
+        builder.ToTable("MENSAGEM_AGENDAMENTO");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("ID_MENSAGEM_PK");
+        builder.Property(x => x.Texto).HasColumnName("TEXTO_MENSAGEM").HasMaxLength(500).IsRequired();
+        builder.Property(x => x.Tipo).HasColumnName("TIPO_MENSAGEM").HasMaxLength(20).IsRequired();
+        builder.Property(x => x.AgendamentoId).HasColumnName("ID_AGENDAMENTO_FK");
+        builder.Property(x => x.AutorId).HasColumnName("ID_AUTOR_FK");
+        builder.HasOne(x => x.Agendamento).WithMany().HasForeignKey(x => x.AgendamentoId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.Autor).WithMany().HasForeignKey(x => x.AutorId).OnDelete(DeleteBehavior.Restrict);
+        BaseEntityConfiguration.Configure(builder);
+    }
+}
+
 internal static class BaseEntityConfiguration
 {
     public static void Configure<T>(EntityTypeBuilder<T> builder) where T : BaseEntity
