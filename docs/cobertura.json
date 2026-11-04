@@ -1,0 +1,12 @@
+{
+  "Dobu.Domain": {
+    "coveredLines": 314,
+    "totalLines": 351,
+    "percent": 89.46
+  },
+  "Dobu.Application": {
+    "coveredLines": 158,
+    "totalLines": 172,
+    "percent": 91.86
+  }
+}

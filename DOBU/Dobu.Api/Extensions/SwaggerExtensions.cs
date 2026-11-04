@@ -9,6 +9,7 @@ public static class SwaggerExtensions
     {
         return services.AddSwaggerGen(options =>
         {
+            options.OperationFilter<ApiOperationFilter>();
             options.SwaggerDoc("v1", new OpenApiInfo
             {
                 Title = "Dobu API",

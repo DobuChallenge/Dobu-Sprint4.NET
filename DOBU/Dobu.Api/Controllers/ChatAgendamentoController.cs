@@ -11,10 +11,12 @@ namespace Dobu.Api.Controllers;
 public class ChatAgendamentoController(IChatAgendamentoService chat) : ControllerBase
 {
     [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<ChatMessageResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Get(Guid agendamentoId, CancellationToken cancellationToken) =>
         Ok(await chat.ListAsync(agendamentoId, CurrentUserId(), cancellationToken));
 
     [HttpPost]
+    [ProducesResponseType(typeof(ChatMessageResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> Post(Guid agendamentoId, ChatMessageRequest request, CancellationToken cancellationToken) =>
         Ok(await chat.SendAsync(agendamentoId, CurrentUserId(), request, cancellationToken));
 

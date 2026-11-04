@@ -1,4 +1,4 @@
-# Sprint 3 Challenge | DOBU
+# Sprint 4 Challenge | DOBU
 
 ## Integrantes do Grupo
 
@@ -14,15 +14,123 @@
 
 A DOBU API é uma API de gerenciamento veterinário inteligente.
 
-A aplicação centraliza o controle de usuários, pets, espécies, raças, consultas, agendamentos, prontuários, vacinas, pagamentos, lembretes, DobuCam, análises com IA e logs de erro. O projeto foi organizado em camadas seguindo uma separação próxima de Clean Architecture.
+A aplicação centraliza o controle de usuários, pets, espécies, raças, consultas, agendamentos, prontuários, vacinas, pagamentos, lembretes, DobuCam, análises com IA e logs de erro. O projeto foi organizado em camadas seguindo uma Clean Architecture, com contratos na Aplicação e implementações na Infraestrutura.
 
-Repositório: <https://github.com/DobuChallenge/Dobu-.NET>
+Repositório: <https://github.com/DobuChallenge/Dobu-Sprint4.NET>
+
+---
+
+## Consolidação da Sprint 4
+
+As rotas e os CRUDs anteriores foram mantidos. Esta versão adiciona consulta paginada, busca, ordenação, navegação HATEOAS, conversa dos agendamentos e histórico de observações da Dobu-Cam no MongoDB.
+
+| Requisito | Implementação e conferência |
+| --- | --- |
+| Arquitetura | Domínio independente; serviços e contratos na Aplicação; EF Core/MongoDB na Infraestrutura; controllers REST e DI na API. Criação/edição de pets e agendamentos, conversa e observações passam por serviços. |
+| API | JWT, Swagger exportado, filtros, paginação e ordenação no banco; links HATEOAS nos cabeçalhos HTTP. |
+| Relacional | Oracle com migrations preservadas e migração de mensagens; aplicação automática configurável e teste em schema isolado. Migrations e persistência foram validadas em Oracle real no CI; configurar a conexão local da equipe ainda é necessário. |
+| NoSQL | Inserção, consulta e exclusão reais de observações no MongoDB, com índice por câmera/data e checagem de acesso ao animal. |
+| Monitoramento | Health checks da API, banco relacional, MongoDB e serviço externo; Serilog, correlação, tracing e métricas Prometheus. |
+| Testes | xUnit com AAA; integração HTTP, MongoDB real e teste Oracle condicional para schema isolado. CI executou os 39 testes com Oracle e MongoDB reais, sem ignorados. |
+| Documentação | Rotas, instalação, migrations, testes, integrantes, diagrama e OpenAPI exportado neste repositório. |
+
+### Diagrama da solução
+
+```mermaid
+flowchart LR
+    Mobile[Aplicativo Dobu] --> API[API REST / JWT / Swagger]
+    API --> Application[Aplicação: serviços e contratos]
+    Application --> Domain[Domínio: entidades e validações]
+    Infrastructure[Infraestrutura: repositories e Unit of Work] -. implementa .-> Application
+    API --> DI[Composição e injeção de dependência]
+    DI --> Infrastructure
+    Infrastructure --> Oracle[(Oracle / EF Core)]
+    Infrastructure --> Mongo[(MongoDB / observações)]
+    API --> Observability[Serilog / OpenTelemetry / Health Checks]
+```
+
+### Paginação, ordenação e filtros
+
+```http
+GET /api/pets?page=1&pageSize=20&sort=nome&descending=false&search=lua
+GET /api/agendamentos?page=1&pageSize=10&status=CONFIRMADO
+```
+
+`page` começa em 1; `pageSize` aceita de 1 a 100 e usa 20 quando omitido junto de `page`. `sort` aceita campos escalares públicos da entidade, exceto senha; `search` pesquisa campos de texto sem consultar senhas. Filtros `petId`, `responsavelId` e `veterinarioId` são aceitos quando o campo existe na entidade. Campos inválidos retornam 400.
+
+Sem `page` e `pageSize`, a lista completa é preservada para compatibilidade com o mobile. A resposta continua sendo um array; `X-Total-Count` informa o total antes da paginação. O cabeçalho `Link` fornece `self`, `collection`, `first`, `last`, `prev` e `next` quando aplicáveis. As consultas individuais também têm `self` e `collection`. Isso permite navegação HATEOAS sem alterar o JSON esperado pelo aplicativo.
+
+### Conversa e confirmação do atendimento
+
+- `GET /api/agendamentos/{agendamentoId}/chat`
+- `POST /api/agendamentos/{agendamentoId}/chat` com `{ "texto": "Olá", "tipo": "MENSAGEM" }`
+- Para confirmar, envie `tipo: "CONFIRMACAO"`. Uma confirmação por participante é mantida; após as duas confirmações, o agendamento fica `CONFIRMADO`.
+- Somente o responsável pelo animal e o veterinário do agendamento acessam a conversa.
+
+### Caderno de cuidados
+
+- `GET /api/informacoes-cuidado/pet/{petId}`
+- `POST /api/informacoes-cuidado` com `{ "titulo", "descricao", "petId" }`
+- `DELETE /api/informacoes-cuidado/{id}`
+
+### Observações da Dobu-Cam no MongoDB
+
+- `GET /api/dobucams/{cameraId}/eventos?page=1&pageSize=20&tipo=HIDRATACAO`
+- `GET /api/dobucams/{cameraId}/eventos/{id}`
+- `POST /api/dobucams/{cameraId}/eventos`
+- `DELETE /api/dobucams/{cameraId}/eventos/{id}`
+
+```json
+{
+  "tipo": "HIDRATACAO",
+  "descricao": "Possível interação junto ao pote de água",
+  "data": "2026-11-04T10:00:00Z",
+  "confianca": 0.8
+}
+```
+
+A API guarda observações recebidas; este endpoint não executa visão computacional nem comprova consumo. Tipos: `PRESENCA`, `MOVIMENTO`, `ALIMENTACAO`, `HIDRATACAO`, `DESCANSO`. Confiança é opcional, entre 0 e 1. A câmera deve pertencer ao responsável autenticado. A ordenação do histórico usa `timestamp` e aceita `descending=true`; `tipo` e `search` filtram os registros. Os dados ficam no MongoDB, separados das entidades relacionais.
+
+### Testes e cobertura da versão
+
+Na verificação local, passaram **20 testes unitários e 18 de integração**, incluindo MongoDB real e o fluxo HTTP completo. Os dois testes de integração do mobile também passaram contra esta API na porta 5100. No GitHub Actions passaram **39 testes sem ignorados**, incluindo a aplicação das migrations e persistência em Oracle isolado: [execução validada](https://github.com/DobuChallenge/Dobu-Sprint4.NET/actions/runs/41776850019). No computador local, o teste Oracle é ignorado enquanto a connection string da equipe não estiver configurada.
+
+Cobertura consolidada por linha de Domínio e Aplicação, unindo os relatórios unitários e de integração: **89,46% em Domínio** e **91,86% em Aplicação**. Os números estão em [docs/cobertura.json](docs/cobertura.json). O limite interno do workflow é 80% por camada; o enunciado recebido não informa percentual numérico.
+
+```powershell
+$env:DOBU_TEST_MONGO_URL = 'mongodb://127.0.0.1:27017'
+$resultados = Join-Path 'TestResults' ([guid]::NewGuid().ToString('N'))
+dotnet test DOBU/Dobu.sln --collect:"XPlat Code Coverage" --results-directory $resultados
+python scripts/coverage.py $resultados --minimum 80
+```
+
+Sem `DOBU_TEST_MONGO_URL`, o teste MongoDB é explicitamente ignorado. Os demais testes HTTP usam SQLite temporário isolado; isso não comprova compatibilidade ou migrations aplicadas no Oracle. Para o teste Oracle, use um schema exclusivo de testes:
+
+```powershell
+$env:DOBU_TEST_ORACLE = $env:ConnectionStrings__DobuOracle
+$env:DOBU_TEST_ORACLE_ISOLATED = 'true'
+dotnet test DOBU/Dobu.sln --filter FullyQualifiedName~OraclePersistenceTests
+```
+
+Esse teste aplica migrations no schema informado e faz rollback dos registros de teste. Não aponte para um schema compartilhado de produção. O [workflow de testes](.github/workflows/dotnet.yml) prepara bancos isolados no GitHub Actions; a execução validada acima comprova a aplicação em Oracle isolado, sem afirmar que o schema da faculdade foi alterado.
+
+### Bancos locais com Docker
+
+Quem já tiver Oracle da faculdade pode usar essa conexão diretamente. Para criar bancos locais, com Docker disponível:
+
+```powershell
+$env:ORACLE_ADMIN_PASSWORD = 'SUA_SENHA_ADMIN_LOCAL'
+$env:DOBU_ORACLE_PASSWORD = 'SUA_SENHA_DO_USUARIO_LOCAL'
+docker compose up -d
+```
+
+O `compose.yml` usa volumes persistentes e publica as portas somente em `127.0.0.1`. Para esse Oracle local, a conexão é `User Id=dobu;Password=SUA_SENHA_DO_USUARIO_LOCAL;Data Source=localhost:1521/FREEPDB1`. As senhas são fornecidas pelo ambiente.
 
 ---
 
 ## Objetivo desta Entrega
 
-Esta entrega corresponde à Sprint 3 de Advanced Business Development with .NET do Challenge, com foco em:
+Esta entrega corresponde à Sprint 4 de Advanced Business Development with .NET do Challenge, com foco em:
 
 - API RESTful com ASP.NET Core Web API
 - CRUD completo
@@ -49,7 +157,7 @@ Esta entrega corresponde à Sprint 3 de Advanced Business Development with .NET 
 - ASP.NET Core Web API
 - Entity Framework Core
 - Oracle Entity Framework Core Provider
-- Oracle Database
+- Oracle Database e MongoDB
 - Swagger / OpenAPI
 - Serilog
 - OpenTelemetry e Prometheus
@@ -137,7 +245,7 @@ Repositories disponíveis:
 - `IUsuarioRepository`
 - `IVacinaRepository`
 
-Cada interface segue o mesmo padrão: `GetAll`, `GetById`, `Add`, `Update`, `Delete` e `SaveChanges`.
+Os contratos das sprints anteriores foram preservados. Os controllers atuais utilizam `IDobuUnitOfWork` e `IEntityRepository<T>`, com operações assíncronas e consultas filtradas/paginadas no banco. `EntityRepository<T>` e `DobuUnitOfWork` são as implementações EF Core. O histórico de observações usa `ICameraObservationRepository`, implementado com o driver MongoDB.
 
 ---
 
@@ -166,6 +274,10 @@ O `appsettings.json` não contém senha, chave JWT ou connection string fixa. Em
 ```text
 ASPNETCORE_ENVIRONMENT=Production
 Database__Provider=Oracle
+Database__ApplyMigrations=true
+Mongo__Enabled=true
+Mongo__ConnectionString=mongodb://localhost:27017
+Mongo__Database=dobu
 ConnectionStrings__DobuOracle=User Id=SEU_USUARIO;Password=SUA_SENHA;Data Source=oracle.fiap.com.br:1521/orcl
 Jwt__Key=CHAVE_COM_PELO_MENOS_32_CARACTERES
 Observability__ExternalServiceUrl=https://servico-externo/health
@@ -177,7 +289,7 @@ Para desenvolvimento local, o projeto usa SQLite pelo `appsettings.Development.j
 
 ## Documentação OpenAPI
 
-O Swagger/OpenAPI está configurado na API.
+O Swagger/OpenAPI está configurado na API. A especificação exportada desta versão está em [docs/openapi.json](docs/openapi.json).
 
 Com a aplicação em execução, acesse:
 
@@ -394,7 +506,7 @@ As evidências complementares ficam na pasta `/docs`, incluindo:
 
 ## Monitoramento, Observabilidade e Testes
 
-A aplicação foi evoluída para a Sprint 3 com os seguintes recursos:
+A aplicação consolida na Sprint 4 com os seguintes recursos:
 
 - Health Checks da API, do banco configurado e de serviço externo.
 - Logging estruturado com Serilog nos níveis Information, Warning e Error, com saída para console e arquivo.
@@ -411,7 +523,7 @@ A aplicação foi evoluída para a Sprint 3 com os seguintes recursos:
 ### Health Checks
 
 - `GET /health`: verifica se a API está respondendo.
-- `GET /health/ready`: verifica a conectividade com o banco e a disponibilidade do serviço externo.
+- `GET /health/ready`: verifica Oracle/SQLite, MongoDB e o serviço externo. O MongoDB é incluído quando `Mongo__Enabled=true`.
 - `GET /metrics`: expõe métricas Prometheus, incluindo duração de resposta e total de erros HTTP.
 
 O endpoint `/health/ready` retorna HTTP `200` quando as dependências estão saudáveis e HTTP `503` quando alguma dependência está indisponível.
@@ -450,7 +562,9 @@ Os testes seguem o padrão AAA:
 ### Pré-requisitos
 
 - .NET SDK 9 instalado.
-- Acesso de rede ao Oracle da FIAP.
+- Acesso de rede a um schema Oracle.
+- MongoDB 8 disponível localmente ou por connection string.
+- Python 3 apenas para consolidar a cobertura, se desejar reproduzir o relatório.
 - JetBrains Rider, Visual Studio ou VS Code com suporte a .NET.
 - Credenciais do Oracle configuradas localmente.
 
@@ -469,6 +583,10 @@ Crie um arquivo `.env` na raiz do projeto. Ele é local e não deve ser commitad
 ```text
 ASPNETCORE_ENVIRONMENT=Development
 Database__Provider=Oracle
+Database__ApplyMigrations=true
+Mongo__Enabled=true
+Mongo__ConnectionString=mongodb://localhost:27017
+Mongo__Database=dobu
 ConnectionStrings__DobuOracle=User Id=SEU_USUARIO;Password=SUA_SENHA;Data Source=oracle.fiap.com.br:1521/orcl
 Jwt__Key=CHAVE_LOCAL_COM_PELO_MENOS_32_CARACTERES
 Observability__ExternalServiceUrl=https://servico-externo/health
@@ -506,10 +624,10 @@ dotnet build DOBU/Dobu.sln
 Caso ainda não tenha o Entity Framework CLI:
 
 ```powershell
-dotnet tool install --global dotnet-ef
+dotnet tool restore
 ```
 
-Aplique as migrations:
+A configuração `Database__ApplyMigrations=true` permite aplicar as migrations Oracle na inicialização. Para executar explicitamente:
 
 ```powershell
 dotnet ef database update `
@@ -518,7 +636,7 @@ dotnet ef database update `
   --context DobuDbContext
 ```
 
-As migrations atuais incluem `InitialDobu` e `Sprint3Oracle`.
+As migrations anteriores foram preservadas; `ConversasAgendamentos` adiciona as mensagens e seus vínculos. O script Oracle idempotente está em [docs/oracle-migrations.sql](docs/oracle-migrations.sql). A geração do script não comprova aplicação no banco: confira a tabela `__EFMigrationsHistory` no Oracle utilizado para avaliar.
 
 Para criar uma nova migration:
 
@@ -565,7 +683,7 @@ Com a API em execução, acesse:
 Fluxo recomendado:
 
 1. Execute `/health` e confirme HTTP `200`.
-2. Execute `/health/ready` e confirme que `database` e `external-service` estão `Healthy`.
+2. Execute `/health/ready` e confirme que `database`, `mongodb` e `external-service` estão `Healthy`.
 3. Execute `/metrics` e confirme o conteúdo Prometheus.
 4. Use o Swagger para testar cadastro, login e endpoints protegidos.
 
