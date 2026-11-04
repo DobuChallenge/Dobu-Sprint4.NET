@@ -2,6 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
+        <UserSecretsId>dobu-sprint4-net</UserSecretsId>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <AssemblyName>Dobu.Api</AssemblyName>
@@ -31,6 +32,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Dobu.Infrastructure\Dobu.Infrastructure.csproj" />
+        <ProjectReference Include="..\Dobu.Migrations.Oracle\Dobu.Migrations.Oracle.csproj" />
     </ItemGroup>
 
 </Project>

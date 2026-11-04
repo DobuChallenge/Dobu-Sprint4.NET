@@ -25,6 +25,11 @@ public class DobuDbContext(DbContextOptions<DobuDbContext> options) : DbContext(
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(DobuDbContext).Assembly);
+        if (Database.IsOracle())
+        {
+            foreach (var entity in modelBuilder.Model.GetEntityTypes())
+                entity.SetTableName("DOBU_" + entity.GetTableName());
+        }
         base.OnModelCreating(modelBuilder);
     }
 }

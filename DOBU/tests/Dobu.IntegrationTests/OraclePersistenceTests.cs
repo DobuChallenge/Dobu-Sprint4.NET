@@ -22,7 +22,9 @@ public class OraclePersistenceTests
     {
         // Arrange: este teste exige schema exclusivo, pois aplica as migrações antes da transação.
         var connection = Environment.GetEnvironmentVariable("DOBU_TEST_ORACLE")!;
-        await using var database = new DobuDbContext(new DbContextOptionsBuilder<DobuDbContext>().UseOracle(connection).Options);
+        var options = new DbContextOptionsBuilder<DobuDbContext>();
+        options.UseDobuOracle(connection);
+        await using var database = new DobuDbContext(options.Options);
         await database.Database.MigrateAsync();
         await using var transaction = await database.Database.BeginTransactionAsync();
         var repository = new EntityRepository<Especie>(database);
@@ -31,12 +33,14 @@ public class OraclePersistenceTests
         repository.Add(species);
         await database.SaveChangesAsync();
         var saved = await repository.FirstOrDefaultAsync(x => x.Id == species.Id);
+        var active = await repository.ListAsync(new Dobu.Application.Queries.QueryParameters(), x => x.Id == species.Id && x.Active);
         var migrations = await database.Database.GetAppliedMigrationsAsync();
         await transaction.RollbackAsync();
         database.ChangeTracker.Clear();
         // Assert
         Assert.Equal(species.Id, saved?.Id);
-        Assert.Contains(migrations, migration => migration.EndsWith("ConversasAgendamentos"));
+        Assert.Single(active);
+        Assert.Contains(migrations, migration => migration.EndsWith("InicialOracleDobu"));
         Assert.False(await repository.AnyAsync(x => x.Id == species.Id));
     }
 }

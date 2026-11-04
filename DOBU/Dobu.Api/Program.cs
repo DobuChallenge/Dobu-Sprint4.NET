@@ -56,10 +56,12 @@ if (builder.Configuration.GetValue<bool>("Mongo:Enabled")) builder.Services.AddH
 builder.Services.AddDobuObservability();
 
 var app = builder.Build();
-if ((builder.Configuration["Database:Provider"] ?? "Sqlite").Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+if (app.Environment.IsDevelopment() && builder.Configuration.GetValue<bool>("Database:UseTestSchema"))
 {
     using var scope = app.Services.CreateScope();
-    scope.ServiceProvider.GetRequiredService<DobuDbContext>().Database.EnsureCreated();
+    var database = scope.ServiceProvider.GetRequiredService<DobuDbContext>();
+    if (!database.Database.IsSqlite()) throw new InvalidOperationException("O schema temporário é exclusivo dos testes SQLite.");
+    database.Database.EnsureCreated();
 }
 if (builder.Configuration.GetValue<bool>("Database:ApplyMigrations"))
 {

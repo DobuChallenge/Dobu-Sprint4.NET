@@ -14,26 +14,16 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var provider = configuration["Database:Provider"] ?? "Sqlite";
-        if (provider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+        services.AddDbContext<DobuDbContext>((provider, options) =>
         {
-            var sqliteConn = configuration.GetConnectionString("DobuSqlite") ?? "Data Source=dobu.db";
-            services.AddDbContext<DobuDbContext>(options =>
-                options.UseSqlite(sqliteConn));
-        }
-        else if (provider.Equals("Oracle", StringComparison.OrdinalIgnoreCase))
-        {
-            var oracleConn = configuration.GetConnectionString("DobuOracle");
+            var settings = provider.GetRequiredService<IConfiguration>();
+            if (!string.Equals(settings["Database:Provider"] ?? "Oracle", "Oracle", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("A API usa Oracle. SQLite é restrito às bases temporárias dos testes.");
+            var oracleConn = settings.GetConnectionString("DobuOracle");
             if (string.IsNullOrWhiteSpace(oracleConn))
                 throw new InvalidOperationException("Configure ConnectionStrings:DobuOracle nas configuracoes seguras do ambiente.");
-
-            services.AddDbContext<DobuDbContext>(options =>
-                options.UseOracle(oracleConn));
-        }
-        else
-        {
-            throw new InvalidOperationException("Database:Provider deve ser Sqlite ou Oracle.");
-        }
+            options.UseDobuOracle(oracleConn);
+        });
 
         services.AddScoped<IDobuUnitOfWork, DobuUnitOfWork>();
         services.AddScoped<IChatAgendamentoService, ChatAgendamentoService>();

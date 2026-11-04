@@ -255,7 +255,6 @@ internal static class BaseEntityConfiguration
         builder.Property(x => x.Active)
             .HasColumnName("ACTIVE")
             .HasColumnType("NUMBER(1)")
-            .HasConversion(v => v ? 1 : 0, v => v == 1)
             .IsRequired();
     }
 }

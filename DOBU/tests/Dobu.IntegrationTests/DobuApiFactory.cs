@@ -26,6 +26,7 @@ public sealed class DobuApiFactory : WebApplicationFactory<Program>
             {
                 ["Database:Provider"] = "Sqlite",
                 ["Database:ApplyMigrations"] = "false",
+                ["Database:UseTestSchema"] = "true",
                 ["Mongo:Enabled"] = (Environment.GetEnvironmentVariable("DOBU_TEST_MONGO_URL") is not null).ToString(),
                 ["Mongo:ConnectionString"] = Environment.GetEnvironmentVariable("DOBU_TEST_MONGO_URL") ?? "mongodb://localhost:27017",
                 ["Mongo:Database"] = _mongoDatabase,

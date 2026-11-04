@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dobu.UnitTests", "tests\Dob
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dobu.IntegrationTests", "tests\Dobu.IntegrationTests\Dobu.IntegrationTests.csproj", "{6BA23A6E-FD53-41BD-8CE9-254DCD581FDE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dobu.Migrations.Oracle", "Dobu.Migrations.Oracle\Dobu.Migrations.Oracle.csproj", "{2AF02261-EADE-497B-8EB1-4D925DFB0ADC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{6BA23A6E-FD53-41BD-8CE9-254DCD581FDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6BA23A6E-FD53-41BD-8CE9-254DCD581FDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6BA23A6E-FD53-41BD-8CE9-254DCD581FDE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AF02261-EADE-497B-8EB1-4D925DFB0ADC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2AF02261-EADE-497B-8EB1-4D925DFB0ADC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2AF02261-EADE-497B-8EB1-4D925DFB0ADC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AF02261-EADE-497B-8EB1-4D925DFB0ADC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{2B325E4E-FF9D-4EC2-B79E-1BD08FB87EF9} = {D05DE220-F35B-4CCE-8D99-8AB1DB735D4F}
