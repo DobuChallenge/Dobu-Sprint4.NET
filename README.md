@@ -2,7 +2,7 @@
 
 **Cuidado que acompanha.**
 
-API para organizar os cuidados dos animais e aproximar responsáveis e veterinários. O Dobu reúne cadastro de pets, agenda, prontuários, vacinas, anotações e observações da Dobu-Cam para apoiar o acompanhamento mesmo à distância.
+API do Dobu para cadastrar animais e organizar consultas, vacinas e registros de cuidados. Responsáveis e veterinários podem conversar sobre os agendamentos e consultar as informações do animal. As observações da Dobu-Cam ficam em um histórico separado.
 
 [![Testes .NET](https://github.com/DobuChallenge/Dobu-Sprint4.NET/actions/workflows/dotnet.yml/badge.svg)](https://github.com/DobuChallenge/Dobu-Sprint4.NET/actions/workflows/dotnet.yml)
 
@@ -17,7 +17,7 @@ API para organizar os cuidados dos animais e aproximar responsáveis e veteriná
 ## Funcionalidades
 
 - Cadastro e autenticação de responsáveis e veterinários com JWT e senhas armazenadas como hash.
-- Gestão de animais, espécies e raças.
+- Cadastro, consulta, edição e exclusão de animais, espécies e raças.
 - Consultas, agendamentos e conversa entre os participantes do atendimento.
 - Confirmação do agendamento pelo responsável e pelo veterinário.
 - Prontuários, vacinas, lembretes e caderno de cuidados.
@@ -31,11 +31,11 @@ A API recebe e armazena observações da câmera; a captura e a análise de imag
 
 .NET 9, ASP.NET Core, Entity Framework Core, Oracle Database, MongoDB, Swagger/OpenAPI, Serilog, OpenTelemetry, Prometheus, xUnit, Moq e Coverlet.
 
-**Oracle é o banco relacional da API, inclusive no desenvolvimento.** SQLite é utilizado somente pelas bases temporárias e isoladas dos testes HTTP. Os registros NoSQL são persistidos no MongoDB.
+A API usa Oracle como banco relacional, inclusive no desenvolvimento, e MongoDB para as observações da câmera. SQLite é usado somente nas bases temporárias dos testes HTTP.
 
 ## Arquitetura
 
-A solução segue Clean Architecture, com dependências voltadas para os contratos e as regras da aplicação.
+O projeto segue Clean Architecture. Os contratos e serviços ficam na Aplicação; os detalhes de banco de dados ficam na Infraestrutura.
 
 | Projeto | Responsabilidade |
 | --- | --- |
