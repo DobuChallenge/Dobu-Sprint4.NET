@@ -4,8 +4,6 @@
 
 API do Dobu para cadastrar animais e organizar consultas, vacinas e registros de cuidados. Responsáveis e veterinários podem conversar sobre os agendamentos e consultar as informações do animal. As observações da Dobu-Cam ficam em um histórico separado.
 
-[![Testes .NET](https://github.com/DobuChallenge/Dobu-Sprint4.NET/actions/workflows/dotnet.yml/badge.svg)](https://github.com/DobuChallenge/Dobu-Sprint4.NET/actions/workflows/dotnet.yml)
-
 ## Integrantes
 
 | Nome | RM |
@@ -259,11 +257,6 @@ Esse teste aplica as migrações e faz rollback dos registros criados durante a 
 O limite interno de cobertura é 80% por camada. A medição consolidada de referência é **89,46% em Domínio** e **91,86% em Aplicação**, registrada em [docs/cobertura.json](docs/cobertura.json). Consulte as execuções e seus relatórios em [GitHub Actions](https://github.com/DobuChallenge/Dobu-Sprint4.NET/actions).
 
 ## Modelagem e documentação
-
-- [Especificação OpenAPI](docs/openapi.json)
-- [Script Oracle idempotente](docs/oracle-migrations.sql)
-- [Resumo de cobertura](docs/cobertura.json)
-- [Coleção Postman](DOBU/postman/Dobu.postman_collection.json)
 - [Modelo relacional](docs/modelorelacional.png)
 - [Diagrama entidade-relacionamento](docs/MER%20%28Entidade-Relacionamento%29.png)
 - [Esquema físico](docs/esquemafisico.png)
