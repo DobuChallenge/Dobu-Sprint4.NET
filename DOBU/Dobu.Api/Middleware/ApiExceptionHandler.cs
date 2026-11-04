@@ -15,7 +15,7 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger) : I
             UnauthorizedAccessException => (401, "Autenticação necessária"),
             KeyNotFoundException => (404, "Registro não encontrado"),
             DbUpdateException => (409, "Conflito com os dados cadastrados"),
-            MongoDB.Driver.MongoException => (503, "Banco de observações indisponível"),
+            MongoDB.Driver.MongoException or TimeoutException => (503, "Banco de observações indisponível"),
             _ => (500, "Não foi possível concluir a operação")
         };
         logger.LogError(exception, "Falha {StatusCode} na requisição {CorrelationId}", status, context.TraceIdentifier);

@@ -20,6 +20,8 @@ public sealed class MongoCameraObservationRepository(IMongoDatabase database) : 
     public async Task<QueryResult<CameraObservation>> ListAsync(Guid cameraId, QueryParameters parameters, string? type, CancellationToken cancellationToken)
     {
         parameters.Validate();
+        if (!string.IsNullOrWhiteSpace(parameters.Sort) && !parameters.Sort.Equals("timestamp", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("As observações são ordenadas pelo campo timestamp.");
         var filter = Builders<ObservationDocument>.Filter.Eq(x => x.CameraId, cameraId.ToString());
         if (!string.IsNullOrWhiteSpace(type)) filter &= Builders<ObservationDocument>.Filter.Eq(x => x.Type, type.Trim().ToUpperInvariant());
         if (!string.IsNullOrWhiteSpace(parameters.Search)) filter &= Builders<ObservationDocument>.Filter.Regex(x => x.Description, new BsonRegularExpression(System.Text.RegularExpressions.Regex.Escape(parameters.Search.Trim()), "i"));

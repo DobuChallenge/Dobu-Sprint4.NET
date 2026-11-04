@@ -105,6 +105,7 @@ public class Sprint4FlowTests(DobuApiFactory factory)
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(1, records.GetArrayLength());
+        Assert.Equal(HttpStatusCode.BadRequest, (await owner.GetAsync(path + "?sort=descricao")).StatusCode);
         Assert.Equal(observation, records[0].GetProperty("id").GetGuid());
         Assert.Equal(HttpStatusCode.NotFound, forbidden.StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
