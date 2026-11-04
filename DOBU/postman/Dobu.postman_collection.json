@@ -1,0 +1,81 @@
+{
+  "info": {
+    "name": "Dobu API",
+    "description": "Colecao de testes para a API Dobu.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5070"
+    }
+  ],
+  "item": [
+    {
+      "name": "Usuarios - listar",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/usuarios"
+      }
+    },
+    {
+      "name": "Usuarios - criar responsavel",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Maria Souza\",\n  \"email\": \"maria@email.com\",\n  \"senha\": \"123456\",\n  \"tipoUsuario\": \"RESPONSAVEL\"\n}"
+        },
+        "url": "{{baseUrl}}/api/usuarios"
+      }
+    },
+    {
+      "name": "Especies - listar",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/especies"
+      }
+    },
+    {
+      "name": "Pets - listar",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/pets"
+      }
+    },
+    {
+      "name": "Consultas - listar",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/consultas"
+      }
+    },
+    {
+      "name": "Agendamentos - listar",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/agendamentos"
+      }
+    },
+    {
+      "name": "DobuCam - listar",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/dobucams"
+      }
+    },
+    {
+      "name": "Analises IA - listar",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/analises-ia"
+      }
+    }
+  ]
+}

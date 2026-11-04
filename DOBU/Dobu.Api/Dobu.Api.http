@@ -1,0 +1,6 @@
+@DobuApi_HostAddress = http://localhost:5070
+
+GET {{DobuApi_HostAddress}}/api/pets
+Accept: application/json
+
+###

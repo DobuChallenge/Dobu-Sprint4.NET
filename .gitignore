@@ -1,0 +1,13 @@
+.env
+
+# Build output
+**/bin/
+**/obj/
+
+# Local development database and logs
+**/*.db
+**/logs/
+
+# Test results and coverage
+**/TestResults/
+**/coverage/
