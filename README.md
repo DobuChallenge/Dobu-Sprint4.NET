@@ -8,7 +8,6 @@ Este repositório contém a API desenvolvida para a 4ª sprint de **Advanced Bus
 
 O aplicativo mobile e o serviço que captura e analisa as imagens da câmera são projetos separados. A API mantém os dados e oferece as rotas usadas nessas integrações.
 
-Projetos relacionados: [aplicativo mobile](https://github.com/DobuChallenge/Dobu-FinalSprint4) e [serviço Dobu-Cam](https://github.com/DobuChallenge/Dobu-Cam).
 
 ## Integrantes
 
